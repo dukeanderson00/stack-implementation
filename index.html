@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Stack Data Structure</title>
+<style>
+:root {
+  --bg: #f4f6f9; --card: #ffffff; --text: #18212d; --muted: #5a6779; --border: #dfe4ec;
+  --accent: #2563eb; --accent-text: #ffffff;
+  --ok: #15803d; --ok-bg: #e8f6ed; --bad: #b42318; --bad-bg: #fdecea;
+  --cell: #eef3ff; --cell-border: #9db8f5; --empty: #c3cbd8;
+  --term-bg: #0f1720; --term-text: #d6e2f0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1118; --card: #121a24; --text: #e6edf5; --muted: #93a1b5; --border: #223044;
+    --accent: #3b6fe0; --accent-text: #ffffff;
+    --ok: #4ade80; --ok-bg: #0f2a1b; --bad: #f87171; --bad-bg: #3a1517;
+    --cell: #17243a; --cell-border: #3b5a96; --empty: #3a465a;
+    --term-bg: #070c12; --term-text: #d6e2f0;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.wrap { max-width: 780px; margin: 0 auto; padding: 20px 16px 48px; }
+h1 { font-size: 1.5rem; margin: 0; }
+.sub { color: var(--muted); margin: 4px 0 18px; }
+.tabs {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px;
+}
+.tab {
+  border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 600;
+  font-size: 0.9rem; padding: 10px 6px; border-radius: 8px; cursor: pointer;
+}
+.tab[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; margin-bottom: 14px;
+}
+.card h2 { font-size: 1.05rem; margin: 0 0 4px; }
+.card h3 { font-size: 0.9rem; margin: 16px 0 8px; color: var(--muted); }
+.desc { margin: 0 0 14px; color: var(--muted); font-size: 0.92rem; }
+.controls { display: grid; gap: 8px; margin-bottom: 14px; }
+input[type="text"] {
+  width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg); color: var(--text);
+}
+.buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.btn {
+  font: inherit; font-weight: 600; padding: 10px 6px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn.wide { width: 100%; }
+.tab:focus-visible, .btn:focus-visible, .chip:focus-visible, input:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px;
+}
+.visual {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px; min-height: 120px; overflow-x: auto;
+}
+.array-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.slot { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px; }
+.cell {
+  width: 56px; height: 48px; display: flex; align-items: center; justify-content: center;
+  border: 2px dashed var(--empty); border-radius: 8px; font-weight: 700; padding: 0 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cell.filled { border-style: solid; border-color: var(--cell-border); background: var(--cell); }
+.cell.top { border-color: var(--accent); }
+.idx { font-size: 0.75rem; color: var(--muted); }
+.tag { font-size: 0.7rem; font-weight: 700; color: var(--accent); min-height: 1em; }
+.linked-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pointer {
+  font-weight: 700; font-size: 0.85rem; padding: 6px 10px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-text);
+}
+.arrow { color: var(--muted); font-weight: 700; }
+.null { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); font-weight: 700; }
+.node {
+  display: flex; border: 2px solid var(--cell-border); border-radius: 8px;
+  background: var(--cell); overflow: hidden;
+}
+.node.top { border-color: var(--accent); }
+.node .data {
+  padding: 10px 12px; font-weight: 700; min-width: 44px; max-width: 110px; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.node .next { padding: 10px; border-left: 2px solid var(--cell-border); color: var(--muted); }
+.caption { margin-top: 12px; font-size: 0.85rem; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 14px 0; }
+.stat { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.stat .label { font-size: 0.75rem; color: var(--muted); }
+.stat .value {
+  font-weight: 700; overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.message {
+  padding: 10px 12px; border-radius: 8px; font-size: 0.92rem; min-height: 44px;
+  background: var(--bg); border: 1px solid var(--border); border-left-width: 4px;
+}
+.message.ok { background: var(--ok-bg); border-color: var(--ok); }
+.message.error { background: var(--bad-bg); border-color: var(--bad); }
+.log { list-style: none; margin: 0; padding: 0; font-size: 0.82rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.log li { padding: 6px 2px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.log li.error { color: var(--bad); }
+.log li.empty { color: var(--muted); }
+.segment { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.segment label { position: relative; display: block; }
+.segment input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.segment span {
+  display: block; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px;
+  text-align: center; font-weight: 600; font-size: 0.9rem; background: var(--bg);
+}
+.segment input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.segment input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.chip {
+  font: inherit; font-size: 0.82rem; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.result { padding: 12px 14px; border-radius: 8px; margin: 14px 0; border-left: 4px solid; }
+.result.ok { background: var(--ok-bg); border-color: var(--ok); }
+.result.bad { background: var(--bad-bg); border-color: var(--bad); }
+.expr {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.05rem;
+  padding: 12px; background: var(--term-bg); color: var(--term-text); border-radius: 8px;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.expr .matched { color: #4ade80; font-weight: 700; }
+.expr .error { color: #ffffff; background: #c0392b; border-radius: 3px; padding: 0 2px; font-weight: 700; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; }
+td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.note { margin: 10px 0 0; font-size: 0.85rem; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) {
+  .just-push { animation: pop 0.28s ease-out; }
+  .just-peek { animation: pulse 0.7s ease-out; }
+}
+@keyframes pop { from { transform: scale(0.6); opacity: 0.3; } to { transform: scale(1); opacity: 1; } }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.55); }
+  100% { box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Stack Data Structure</h1>
+<p class="sub">Array and linked list implementations in JavaScript, with a balanced brackets checker.</p>
+<nav class="tabs" id="tabs" aria-label="Sections"></nav>
+<main id="app"></main>
+</div>
+<script>
+class ArrayStack {
+  constructor() {
+    this.capacity = 5;
+    this.data = new Array(this.capacity).fill(null);
+    this.topIndex = 0;
+  }
+
+  push(item) {
+    if (this.topIndex === this.capacity) {
+      this.resize(this.capacity * 2);
+    }
+    this.data[this.topIndex++] = item;
+  }
+
+  pop() {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot pop from an empty stack');
+    }
+    const item = this.data[--this.topIndex];
+    this.data[this.topIndex] = null;
+    return item;
+  }
+
+  peek() {
+    if (this.isEmpty()) {
+      throw new Error('Stack is empty: there is nothing to peek at');
+    }
+    return this.data[this.topIndex - 1];
+  }
+
+  isEmpty() {
+    return this.topIndex === 0;
+  }
+
+  size() {
+    return this.topIndex;
+  }
+
+  resize(newCapacity) {
+    const bigger = new Array(newCapacity).fill(null);
+    for (let i = 0; i < this.topIndex; i++) {
+      bigger[i] = this.data[i];
+    }
+    this.data = bigger;
+    this.capacity = newCapacity;
+  }
+
+  toArray() {
+    return this.data.slice(0, this.topIndex);
+  }
+}
+
+class Node {
+  constructor(data, next) {
+    this.data = data;
+    this.next = next;
+  }
+}
+
+class LinkedStack {
+  constructor() {
+    this.head = null;
+    this.count = 0;
+  }
+
+  push(item) {
+    this.head = new Node(item, this.head);
+    this.count++;
+  }
+
+  pop() {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot pop from an empty stack');
+    }
+    const item = this.head.data;
+    this.head = this.head.next;
+    this.count--;
+    return item;
+  }
+
+  peek() {
+    if (this.isEmpty()) {
+      throw new Error('Stack is empty: there is nothing to peek at');
+    }
+    return this.head.data;
+  }
+
+  isEmpty() {
+    return this.head === null;
+  }
+
+  size() {
+    return this.count;
+  }
+
+  toArray() {
+    const items = [];
+    for (let current = this.head; current !== null; current = current.next) {
+      items.push(current.data);
+    }
+    return items.reverse();
+  }
+}
+
+const PAIRS = { ')': '(', ']': '[', '}': '{' };
+const OPENERS = '([{';
+
+function checkBrackets(expr, stack) {
+  const steps = [];
+  const marks = {};
+  let bracketCount = 0;
+
+  const snapshot = () => stack.toArray().map(index => expr[index]).join(' ') || 'empty';
+  const finish = (balanced, message) => ({ balanced, message, steps, marks, bracketCount });
+
+  for (let i = 0; i < expr.length; i++) {
+    const c = expr[i];
+    const position = i + 1;
+
+    if (OPENERS.includes(c)) {
+      bracketCount++;
+      stack.push(i);
+      steps.push({ position, bracket: c, action: `push '${c}'`, stack: snapshot() });
+    } else if (PAIRS[c]) {
+      bracketCount++;
+      if (stack.isEmpty()) {
+        marks[i] = 'error';
+        steps.push({ position, bracket: c, action: `'${c}' found but the stack is empty`, stack: snapshot() });
+        return finish(false, `Position ${position}: '${c}' has no matching opening bracket`);
+      }
+      const openIndex = stack.pop();
+      const open = expr[openIndex];
+      if (open !== PAIRS[c]) {
+        marks[i] = 'error';
+        marks[openIndex] = 'error';
+        steps.push({ position, bracket: c, action: `pop '${open}' but it does not match '${c}'`, stack: snapshot() });
+        return finish(false, `Position ${openIndex + 1}: '${open}' does not match '${c}' at position ${position}`);
+      }
+      marks[i] = 'matched';
+      marks[openIndex] = 'matched';
+      steps.push({ position, bracket: c, action: `pop '${open}' and it matches`, stack: snapshot() });
+    }
+  }
+
+  if (!stack.isEmpty()) {
+    const unclosed = stack.toArray();
+    unclosed.forEach(index => { marks[index] = 'error'; });
+    const last = unclosed[unclosed.length - 1];
+    steps.push({ position: '-', bracket: '-', action: 'end of expression, stack is not empty', stack: snapshot() });
+    return finish(false, `Position ${last + 1}: '${expr[last]}' is never closed`);
+  }
+
+  steps.push({ position: '-', bracket: '-', action: 'end of expression, stack is empty', stack: 'empty' });
+  return finish(
+    true,
+    bracketCount === 0
+      ? 'No brackets were found in this expression.'
+      : 'Every opening bracket is closed in the correct order.'
+  );
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function makeButton(label, className) {
+  const button = el('button', className, label);
+  button.type = 'button';
+  return button;
+}
+
+function renderArray(container, stack, highlight) {
+  const items = stack.toArray();
+  const row = el('div', 'array-row');
+  for (let i = 0; i < stack.capacity; i++) {
+    const filled = i < items.length;
+    const isTop = filled && i === items.length - 1;
+    const slot = el('div', 'slot');
+    let cellClass = 'cell';
+    if (filled) cellClass += ' filled';
+    if (isTop) cellClass += ' top';
+    if (isTop && highlight) cellClass += ' just-' + highlight;
+    slot.append(
+      el('div', cellClass, filled ? items[i] : ''),
+      el('div', 'idx', String(i)),
+      el('div', 'tag', isTop ? 'top' : ' ')
+    );
+    row.append(slot);
+  }
+  const full = items.length === stack.capacity;
+  const caption = `Capacity ${stack.capacity}, size ${items.length}. ` +
+    (full
+      ? 'The array is full, so the next push will double its capacity.'
+      : `The next item will be stored at index ${items.length}.`);
+  container.replaceChildren(row, el('div', 'caption', caption));
+}
+
+function renderLinked(container, stack, highlight) {
+  const items = stack.toArray().reverse();
+  const row = el('div', 'linked-row');
+  row.append(el('span', 'pointer', 'top'), el('span', 'arrow', '→'));
+  items.forEach((value, i) => {
+    const isTop = i === 0;
+    const node = el('div', 'node' + (isTop ? ' top' : '') + (isTop && highlight ? ' just-' + highlight : ''));
+    node.append(el('div', 'data', value), el('div', 'next', i === items.length - 1 ? '∅' : '•'));
+    row.append(node, el('span', 'arrow', '→'));
+  });
+  row.append(el('span', 'null', 'null'));
+  const caption = `${items.length} node${items.length === 1 ? '' : 's'}. The head of the list is the top of the stack.`;
+  container.replaceChildren(row, el('div', 'caption', caption));
+}
+
+function createStackPanel(config) {
+  let stack = config.create();
+  const entries = [];
+
+  const panel = el('section', 'card');
+
+  const input = el('input');
+  input.type = 'text';
+  input.maxLength = 10;
+  input.placeholder = 'Value to push, e.g. 25';
+  input.autocomplete = 'off';
+  input.setAttribute('aria-label', 'Value to push');
+
+  const pushBtn = makeButton('Push', 'btn primary');
+  const popBtn = makeButton('Pop', 'btn');
+  const peekBtn = makeButton('Peek', 'btn');
+  const resetBtn = makeButton('Reset', 'btn');
+  const buttons = el('div', 'buttons');
+  buttons.append(pushBtn, popBtn, peekBtn, resetBtn);
+
+  const controls = el('div', 'controls');
+  controls.append(input, buttons);
+
+  const visual = el('div', 'visual');
+  visual.setAttribute('role', 'group');
+  visual.setAttribute('aria-label', config.title + ' diagram');
+
+  const statDefs = [
+    ['Size', s => s.size()],
+    ['Is empty', s => s.isEmpty()],
+    ['Top (peek)', s => (s.isEmpty() ? 'none' : s.peek())]
+  ].concat(config.extraStats);
+  const statsBox = el('div', 'stats');
+  const statValues = statDefs.map(def => {
+    const box = el('div', 'stat');
+    const value = el('div', 'value');
+    box.append(el('div', 'label', def[0]), value);
+    statsBox.append(box);
+    return value;
+  });
+
+  const message = el('div', 'message');
+  message.setAttribute('role', 'status');
+  const log = el('ul', 'log');
+
+  panel.append(
+    el('h2', '', config.title),
+    el('p', 'desc', config.description),
+    controls,
+    visual,
+    statsBox,
+    message,
+    el('h3', '', 'Operation log'),
+    log
+  );
+
+  function refresh(highlight) {
+    config.render(visual, stack, highlight);
+    statDefs.forEach((def, i) => {
+      statValues[i].textContent = String(def[1](stack));
+    });
+  }
+
+  function say(text, kind) {
+    message.className = 'message ' + kind;
+    message.textContent = text;
+    entries.unshift({ text, kind });
+    if (entries.length > 8) entries.pop();
+    log.replaceChildren(...entries.map(entry => el('li', entry.kind === 'error' ? 'error' : '', entry.text)));
+  }
+
+  function doPush() {
+    const value = input.value.trim();
+    if (!value) {
+      say('Type a value first, then press Push.', 'error');
+      input.focus();
+      return;
+    }
+    const capacityBefore = stack.capacity;
+    stack.push(value);
+    input.value = '';
+    let text = `push("${value}"), size is now ${stack.size()}`;
+    if (stack.capacity !== capacityBefore) {
+      text += `. The array was full, so its capacity doubled from ${capacityBefore} to ${stack.capacity}`;
+    }
+    say(text, 'ok');
+    refresh('push');
+    input.focus();
+  }
+
+  function doPop() {
+    try {
+      const value = stack.pop();
+      say(`pop() returned "${value}", size is now ${stack.size()}`, 'ok');
+      refresh(null);
+    } catch (error) {
+      say(error.message, 'error');
+    }
+  }
+
+  function doPeek() {
+    try {
+      const value = stack.peek();
+      say(`peek() returned "${value}", the stack is unchanged`, 'ok');
+      refresh('peek');
+    } catch (error) {
+      say(error.message, 'error');
+    }
+  }
+
+  function doReset() {
+    stack = config.create();
+    entries.length = 0;
+    refresh(null);
+    say('reset(): a new empty stack was created', 'ok');
+  }
+
+  pushBtn.addEventListener('click', doPush);
+  popBtn.addEventListener('click', doPop);
+  peekBtn.addEventListener('click', doPeek);
+  resetBtn.addEventListener('click', doReset);
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') doPush();
+  });
+
+  config.initial.forEach(value => {
+    stack.push(value);
+    say(`push("${value}"), size is now ${stack.size()}`, 'ok');
+  });
+  message.className = 'message';
+  message.textContent = 'Three values were pushed to start. Try Push, Pop and Peek, or Reset to begin with an empty stack.';
+  refresh(null);
+
+  return panel;
+}
+
+const SAMPLES = ['{[a + b] * (c - d)}', '((2 + 3) * 4', '(a + b]', 'x + y)', 'no brackets here'];
+
+function createCheckerPanel() {
+  const panel = el('section', 'card');
+
+  const input = el('input');
+  input.type = 'text';
+  input.maxLength = 200;
+  input.placeholder = 'Type an expression, e.g. {[1 + 2] * (3 - 4)}';
+  input.autocomplete = 'off';
+  input.autocapitalize = 'none';
+  input.spellcheck = false;
+  input.setAttribute('aria-label', 'Expression to check');
+
+  const segment = el('div', 'segment');
+  segment.setAttribute('role', 'radiogroup');
+  segment.setAttribute('aria-label', 'Stack implementation');
+  [['array', 'Array stack'], ['linked', 'Linked list stack']].forEach((option, i) => {
+    const wrap = el('label');
+    const radio = el('input');
+    radio.type = 'radio';
+    radio.name = 'implementation';
+    radio.value = option[0];
+    radio.checked = i === 0;
+    wrap.append(radio, el('span', '', option[1]));
+    segment.append(wrap);
+  });
+
+  const checkBtn = makeButton('Check expression', 'btn primary wide');
+  const chips = el('div', 'chips');
+  const result = el('div');
+  result.setAttribute('aria-live', 'polite');
+
+  const controls = el('div', 'controls');
+  controls.append(input, segment, checkBtn);
+
+  panel.append(
+    el('h2', '', 'Application: Balanced Brackets Checker'),
+    el('p', 'desc',
+      'A stack is Last In, First Out, so the most recently opened bracket must be the first one closed. ' +
+      'Each opening bracket is pushed onto the stack, and each closing bracket pops one and must match it. ' +
+      'Choose which stack implementation does the work.'),
+    controls,
+    el('h3', '', 'Try an example'),
+    chips,
+    result
+  );
+
+  function check() {
+    const expr = input.value;
+    result.replaceChildren();
+    if (!expr.trim()) {
+      result.append(el('div', 'message error', 'Type an expression first, or tap one of the examples.'));
+      input.focus();
+      return;
+    }
+
+    const implementation = segment.querySelector('input:checked').value;
+    const stack = implementation === 'array' ? new ArrayStack() : new LinkedStack();
+    const outcome = checkBrackets(expr, stack);
+
+    const banner = el('div', 'result ' + (outcome.balanced ? 'ok' : 'bad'));
+    banner.append(el('strong', '', outcome.balanced ? 'BALANCED' : 'NOT BALANCED'), el('div', '', outcome.message));
+
+    const exprBox = el('div', 'expr');
+    let plain = '';
+    for (let i = 0; i < expr.length; i++) {
+      const mark = outcome.marks[i];
+      if (mark) {
+        if (plain) {
+          exprBox.append(plain);
+          plain = '';
+        }
+        exprBox.append(el('span', mark, expr[i]));
+      } else {
+        plain += expr[i];
+      }
+    }
+    if (plain) exprBox.append(plain);
+
+    result.append(banner, el('h3', '', 'Expression'), exprBox);
+
+    if (outcome.bracketCount > 0) {
+      const table = el('table');
+      const headRow = el('tr');
+      ['Step', 'Position', 'Bracket', 'Action', 'Stack (bottom to top)'].forEach(name => {
+        headRow.append(el('th', '', name));
+      });
+      const head = el('thead');
+      head.append(headRow);
+      table.append(head);
+      const body = el('tbody');
+      outcome.steps.forEach((step, i) => {
+        const row = el('tr');
+        row.append(
+          el('td', '', String(i + 1)),
+          el('td', '', String(step.position)),
+          el('td', 'mono', step.bracket),
+          el('td', '', step.action),
+          el('td', 'mono', step.stack)
+        );
+        body.append(row);
+      });
+      table.append(body);
+      const wrap = el('div', 'table-wrap');
+      wrap.append(table);
+      result.append(el('h3', '', 'Step by step'), wrap);
+    }
+
+    result.append(el('p', 'note', 'Checked using the ' + (implementation === 'array' ? 'array' : 'linked list') + ' stack.'));
+  }
+
+  SAMPLES.forEach(sample => {
+    const chip = makeButton(sample, 'chip');
+    chip.addEventListener('click', () => {
+      input.value = sample;
+      check();
+    });
+    chips.append(chip);
+  });
+
+  checkBtn.addEventListener('click', check);
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') check();
+  });
+  segment.addEventListener('change', () => {
+    if (input.value.trim()) check();
+  });
+
+  input.value = SAMPLES[0];
+  check();
+
+  return panel;
+}
+
+function init() {
+  const tabsNav = document.getElementById('tabs');
+  const app = document.getElementById('app');
+
+  const sections = [
+    {
+      label: 'Array Stack',
+      panel: createStackPanel({
+        title: 'Stack using Array',
+        description: 'Items are stored in a fixed-size array. When it is full, a new array twice the size is created and the items are copied over. Push and pop take constant time.',
+        create: () => new ArrayStack(),
+        render: renderArray,
+        extraStats: [['Capacity', s => s.capacity]],
+        initial: ['10', '20', '30']
+      })
+    },
+    {
+      label: 'Linked List',
+      panel: createStackPanel({
+        title: 'Stack using Linked List',
+        description: 'Each item lives in a node that points to the node below it. The head of the list is the top of the stack, so push and pop only change the head and there is no size limit.',
+        create: () => new LinkedStack(),
+        render: renderLinked,
+        extraStats: [],
+        initial: ['10', '20', '30']
+      })
+    },
+    { label: 'Application', panel: createCheckerPanel() }
+  ];
+
+  const buttons = sections.map((section, index) => {
+    const button = makeButton(section.label, 'tab');
+    button.addEventListener('click', () => show(index));
+    tabsNav.append(button);
+    app.append(section.panel);
+    return button;
+  });
+
+  function show(active) {
+    sections.forEach((section, index) => {
+      section.panel.hidden = index !== active;
+      buttons[index].setAttribute('aria-pressed', String(index === active));
+    });
+  }
+
+  show(0);
+}
+
+init();
+</script>
+</body>
+</html>
